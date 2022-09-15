@@ -1,4 +1,5 @@
 import urllib3
+import os
 import argparse
 import subprocess
 import json
@@ -8,16 +9,20 @@ true = True
 false = False
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 listObj = []
+fakelist= []
 
 parser=argparse.ArgumentParser()
 
-parser.add_argument('--bucket', type=str, required=True, help="Input bucket name")
+parser.add_argument('--bucket', type=str, help="Input bucket name")
 
-parser.add_argument('--json', type=str, help="Write verbose result in JSONL format ex: --json file.json")
+parser.add_argument('--json', type=str, help="Write verbose result in JSONL format ex: --json directory")
 parser.add_argument('--raw', action="store_true", help="Show crisp output in a raw format stdout, default value is false")
 parser.add_argument('--silent',action="store_false", help="Display findings only")
+parser.add_argument('--list', help="Input a file, contains bucket names")
 # Parse the argument
 args = parser.parse_args()
+
+fakelist.append(args.bucket)
 
 awsout=subprocess.run(['aws','s3','ls'], capture_output=True)
 outerr=str(awsout.stderr)
@@ -27,7 +32,7 @@ if "Unable to locate" in outerr:
 
 if args.silent == True:
     ascii_banner = pyfiglet.figlet_format("BAS3")
-    print(ascii_banner+"Bucket Analyzer S3 v1.0\n\n")
+    print(ascii_banner+"Bucket Analyzer S3 v2.0\n\n")
 
 def anonymousAccess(bucket_url,region):
     try:
@@ -125,26 +130,46 @@ def rawOutput(jsonObj, bucketname):
 
 
 
-# Parse the argument
-regions = ["s3-ap-northeast-1","s3-ap-northeast-2","s3-ap-northeast-3","s3-ap-south-1","s3-ap-southeast-1","s3-ap-southeast-2","s3-ca-central-1","s3-cn-north-1","s3-eu-central-1","s3-eu-west-1","s3-eu-west-2","s3-eu-west-3","s3-sa-east-1","s3-us-east-1","s3-us-east-2","s3-us-west-1","s3-us-west-2","s3"]
-for i in regions:
-    s3url="https://"+args.bucket+"."+i+".amazonaws.com"
-    anonymousAccess(s3url,i)
+def mainEngine(bucketname):
+    regions = ["s3-ap-northeast-1","s3-ap-northeast-2","s3-ap-northeast-3","s3-ap-south-1","s3-ap-southeast-1","s3-ap-southeast-2","s3-ca-central-1","s3-cn-north-1","s3-eu-central-1","s3-eu-west-1","s3-eu-west-2","s3-eu-west-3","s3-sa-east-1","s3-us-east-1","s3-us-east-2","s3-us-west-1","s3-us-west-2","s3"]
+    for i in regions:
+        s3url="https://"+bucketname+"."+i+".amazonaws.com"
+        anonymousAccess(s3url,i)
+        
+    f_output=outputHandler(listObj,"anonymous_access")
+    arbitraryListing(bucketname)
+    arbitraryFileUpload(bucketname)
+    readableBucketPolicy(bucketname)
+    getBucketAcl(bucketname)
+    #print(listObj)
+    jj=json.dumps(listObj)
+    #print(jj)
 
+    #print(args.json)
+    if args.json is not None:
+        filename = args.json+"/"+bucketname+".json"
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        with open(filename, "w") as outfile:
+            outfile.write(jj)
 
-#arbitraryListing(args.bucket)
+    if args.raw == True:
+        rawOutput(jj,bucketname)
+#if args.json is not None:
+ #   with open(args.json, "w") as outfile:
+  #      outfile.write(jj)
 
-f_output=outputHandler(listObj,"anonymous_access")
-arbitraryListing(args.bucket)
-arbitraryFileUpload(args.bucket)
-readableBucketPolicy(args.bucket)
-getBucketAcl(args.bucket)
-#print(listObj)
-jj=json.dumps(listObj)
-#print(jj)
-if args.raw == True:
-    rawOutput(jj,args.bucket)
-if args.json is not None:
-    with open(args.json, "w") as outfile:
-        outfile.write(jj)
+if args.list is not None:
+    bl=open(args.list, "r")
+    for i in bl:
+        #print(i)
+        listObj=[]
+        bn=i.rstrip()
+        mainEngine(bn)
 
+if args.bucket is not None:
+    #print(fakelist)
+    for i in fakelist:
+        #print(i)
+        bb=i.rstrip()
+        listObj=[]
+        mainEngine(bb)
