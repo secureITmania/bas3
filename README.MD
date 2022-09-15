@@ -1,6 +1,6 @@
 ## Bucket Analyzer S3
 
-![bas3 version](https://img.shields.io/badge/version-v1.0-blue) ![python version](https://img.shields.io/badge/python-v3.6+-green)
+![bas3 version](https://img.shields.io/badge/version-v2.0-blue) ![python version](https://img.shields.io/badge/python-v3.6+-green)
 
 ![image-20220912101401930](https://github.com/secureITmania/bas3/blob/master/asset/image-20220912101401930.png)
 
